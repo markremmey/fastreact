@@ -7,7 +7,8 @@ from app.schemas import UserRead, UserCreate, UserUpdate
 import os
 import logging
 logging.basicConfig(level=logging.INFO)
-
+from dotenv import load_dotenv
+load_dotenv()
 SECRET = os.getenv("SECRET", "CHANGE_THIS_IN_PRODUCTION")
 app = FastAPI()
 # CORS settings – allow the React frontend to call this API
@@ -54,6 +55,10 @@ app.include_router(
     tags=["users"]
 )
 # OAuth router for Google – directs users to Google's consent page and handles callbacks
+# Creates /auth/google/authorize and /auth/google/callback
+# /auth/google/authorize redirects to Google's consent page
+# /auth/google/callback handles the callback from Google and redirects to the frontend
+# This is specified via the frontend_url in the OAuthRedirectAuthenticationBackend class in users.py
 app.include_router(
     fastapi_users.get_oauth_router(
         oauth_client=google_oauth_client,

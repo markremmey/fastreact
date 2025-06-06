@@ -1,11 +1,10 @@
 // src/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const { loginWithPassword } = useAuth();
-  const navigate = useNavigate();
   // State for form inputs and error message
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +29,7 @@ const LoginPage: React.FC = () => {
       const authorizeUrl = `${baseUrl}/auth/google/authorize`;
       console.log("authorizeUrl", authorizeUrl);
       // 1. Fetch the authorization URL from our backend
+      
       const res = await fetch(authorizeUrl);
 
       if (!res.ok) {

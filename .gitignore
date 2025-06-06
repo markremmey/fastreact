@@ -2,6 +2,7 @@
 *.env
 *.venv
 *.db
+*.ipynb
 local
 logs
 *.log

@@ -4,23 +4,26 @@ import { AuthProvider, useAuth } from './AuthContext';
 import LoginPage from './Pages/LoginPage';
 import RegisterPage from './Pages/RegisterPage';
 import ProfilePage from './Pages/ProfilePage';
-import AuthCallbackPage from './Pages/AuthCallbackPage';
 
 function App() {
-  const { token } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Or a spinner component
+  }
+
   return (
     <Routes>
-      {/* Redirect root to either Library (if logged in or in demo) or Login */}
+      {/* Redirect root to either Profile (if logged in) or Login */}
       <Route path="/" element={
-        (token) ? <Navigate to="/profile" replace /> : <Navigate to="/login" replace />
+        isAuthenticated ? <Navigate to="/profile" replace /> : <Navigate to="/login" replace />
       }/>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       {/* Protected routes */}
       <Route path="/profile" element={
-        (token) ? <ProfilePage /> : <Navigate to="/login" replace />
+        isAuthenticated ? <ProfilePage /> : <Navigate to="/login" replace />
       }/>
     </Routes>
   );

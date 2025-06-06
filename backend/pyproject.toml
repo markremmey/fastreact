@@ -9,6 +9,8 @@ dependencies = [
     "fastapi-users[sqlalchemy]>=14.0.1",
     "fastapi[standard]>=0.115.12",
     "httpx-oauth>=0.16.1",
+    "ipykernel>=6.29.5",
+    "pandas>=2.3.0",
     "sqlalchemy>=2.0.41",
     "uvicorn>=0.34.3",
 ]

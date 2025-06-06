@@ -8,6 +8,7 @@ from fastapi_users.authentication import (
     BearerTransport,
     JWTStrategy,
     Strategy,
+    CookieTransport
 )
 from fastapi_users.password import PasswordHelper
 from httpx_oauth.clients.google import GoogleOAuth2
@@ -21,10 +22,7 @@ from dotenv import load_dotenv
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
-logging.info(f"GOOGLE_OAUTH_CLIENT_ID: {os.getenv('GOOGLE_OAUTH_CLIENT_ID')}")
-logging.info(f"GOOGLE_OAUTH_CLIENT_SECRET: {os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')}")
-router = APIRouter()
-# OAuth client setup for Google
+
 google_oauth_client = GoogleOAuth2(
     os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
     os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
@@ -49,37 +47,49 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
 async def get_user_manager(user_db=Depends(get_user_db)):
     yield UserManager(user_db)
 
-# Authentication backend using JWT tokens in Authorization header (Bearer auth)
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+# Authentication backend using JWT tokens in Cookie transport
+# For production, you'd want cookie_secure=True. For local dev, False.
+cookie_transport = CookieTransport(cookie_name="fastreact", cookie_max_age=3600, cookie_secure=False)
 def get_jwt_strategy() -> JWTStrategy:
-    logging.info("JWT Strategy invoked, a token will be generated.")
+    logging.info("Cookie strategy invoked, a token will be generated.")
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 
 auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=bearer_transport,
+    name="cookie",
+    transport=cookie_transport,
     get_strategy=get_jwt_strategy
 )
 
 class OAuthRedirectAuthenticationBackend(AuthenticationBackend):
-    async def login(
-        self, strategy: Strategy, user: User, response: Optional[Response] = None
-    ) -> Response:
+    async def login(self, strategy: Strategy, user: User) -> Response:
         token = await strategy.write_token(user)
         frontend_url = os.environ.get("FRONTEND_URL", "http://127.0.0.1:5173")
-        redirect_url = f"{frontend_url}/auth/callback?token={token}"
-        return RedirectResponse(redirect_url)
+        
+        redirect_response = RedirectResponse(f"{frontend_url}/profile")
+        
+        redirect_response.set_cookie(
+            key=self.transport.cookie_name,
+            value=token,
+            max_age=self.transport.cookie_max_age,
+            path=self.transport.cookie_path,
+            domain=self.transport.cookie_domain,
+            secure=self.transport.cookie_secure,
+            httponly=self.transport.cookie_httponly,
+            samesite=self.transport.cookie_samesite,
+        )
+        
+        return redirect_response
 
 oauth_redirect_backend = OAuthRedirectAuthenticationBackend(
     name="google-oauth-redirect",
-    transport=bearer_transport,
+    transport=cookie_transport,
     get_strategy=get_jwt_strategy,
 )
 
 # FastAPIUsers instance helps generate routers for auth
 fastapi_users = FastAPIUsers[User, uuid.UUID](
     get_user_manager,
-    [auth_backend]  # list of authentication backends (here only JWT)
+    [auth_backend, oauth_redirect_backend]  # list of authentication backends (here only JWT and OAuth)
 )
 
 # Current active user dependency for protected routes
