@@ -1,5 +1,3 @@
-Of course. It's an excellent idea to document this workflow for future reference. Here is a detailed report on the OAuth process we've implemented, breaking down the concepts, code execution path, and the role of the `fastapi-users` library.
-
 ***
 
 ## Detailed Report: Google OAuth Workflow with React & FastAPI Users
